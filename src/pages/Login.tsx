@@ -5,24 +5,47 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login process
-    setTimeout(() => {
-      console.log("Login attempted with:", { email, password });
-      alert("Login functionality will be connected to Supabase backend");
-      setIsLoading(false);
-    }, 1000);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Successfully logged in!");
+        navigate('/');
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+    }
+    
+    setIsLoading(false);
   };
 
   return (

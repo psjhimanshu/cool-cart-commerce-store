@@ -1,48 +1,144 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Edit, Trash2, Package, Users, BarChart3 } from "lucide-react";
+import { Plus, Edit, Trash2, Package, Users, BarChart3, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  stock: number;
+  image_url: string;
+}
 
 const Admin = () => {
-  const [products, setProducts] = useState([
-    { id: 1, name: "Wireless Headphones", price: 99.99, category: "Electronics", stock: 50 },
-    { id: 2, name: "Summer Dress", price: 49.99, category: "Clothing", stock: 30 },
-    { id: 3, name: "Coffee Maker", price: 129.99, category: "Home & Garden", stock: 20 }
-  ]);
-
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [newProduct, setNewProduct] = useState({
     name: "",
+    description: "",
     price: "",
     category: "",
-    stock: ""
+    stock: "",
+    image_url: ""
   });
-
   const [showAddForm, setShowAddForm] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  const handleAddProduct = (e: React.FormEvent) => {
-    e.preventDefault();
-    const product = {
-      id: products.length + 1,
-      name: newProduct.name,
-      price: parseFloat(newProduct.price),
-      category: newProduct.category,
-      stock: parseInt(newProduct.stock)
-    };
-    setProducts([...products, product]);
-    setNewProduct({ name: "", price: "", category: "", stock: "" });
-    setShowAddForm(false);
-    alert("Product added successfully!");
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching products:', error);
+      toast.error('Failed to load products');
+    } else {
+      setProducts(data || []);
+    }
+    setLoading(false);
   };
 
-  const handleDeleteProduct = (id: number) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      setProducts(products.filter(p => p.id !== id));
+  const uploadImage = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
+
+  const handleAddProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUploading(true);
+
+    try {
+      let imageUrl = newProduct.image_url;
+
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+      }
+
+      const { data, error } = await supabase
+        .from('products')
+        .insert([{
+          name: newProduct.name,
+          description: newProduct.description,
+          price: parseFloat(newProduct.price),
+          category: newProduct.category,
+          stock: parseInt(newProduct.stock),
+          image_url: imageUrl
+        }]);
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Product added successfully!");
+      setNewProduct({ name: "", description: "", price: "", category: "", stock: "", image_url: "" });
+      setImageFile(null);
+      setShowAddForm(false);
+      fetchProducts();
+    } catch (error) {
+      console.error('Error adding product:', error);
+      toast.error('Failed to add product');
+    }
+    setUploading(false);
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting product:', error);
+      toast.error('Failed to delete product');
+    } else {
+      toast.success('Product deleted successfully');
+      fetchProducts();
     }
   };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+    }
+  };
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -149,9 +245,50 @@ const Admin = () => {
                       required
                     />
                   </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="productDescription">Description</Label>
+                    <Input
+                      id="productDescription"
+                      value={newProduct.description}
+                      onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="productImage">Product Image</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="productImageUrl"
+                        placeholder="Image URL (optional if uploading file)"
+                        value={newProduct.image_url}
+                        onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})}
+                      />
+                      <div className="relative">
+                        <Input
+                          id="productImageFile"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="sr-only"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('productImageFile')?.click()}
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload
+                        </Button>
+                      </div>
+                    </div>
+                    {imageFile && (
+                      <p className="text-sm text-gray-600 mt-1">Selected: {imageFile.name}</p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <Button type="submit">Add Product</Button>
+                  <Button type="submit" disabled={uploading}>
+                    {uploading ? "Adding..." : "Add Product"}
+                  </Button>
                   <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
                     Cancel
                   </Button>
@@ -164,6 +301,7 @@ const Admin = () => {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b">
+                    <th className="text-left py-3 px-4">Image</th>
                     <th className="text-left py-3 px-4">Name</th>
                     <th className="text-left py-3 px-4">Price</th>
                     <th className="text-left py-3 px-4">Category</th>
@@ -174,6 +312,13 @@ const Admin = () => {
                 <tbody>
                   {products.map((product) => (
                     <tr key={product.id} className="border-b hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        <img 
+                          src={product.image_url} 
+                          alt={product.name}
+                          className="w-12 h-12 object-cover rounded"
+                        />
+                      </td>
                       <td className="py-3 px-4">{product.name}</td>
                       <td className="py-3 px-4">${product.price}</td>
                       <td className="py-3 px-4">{product.category}</td>

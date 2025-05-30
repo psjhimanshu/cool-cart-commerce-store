@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -17,6 +21,14 @@ const Signup = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -29,18 +41,34 @@ const Signup = () => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+      toast.error("Passwords don't match!");
       return;
     }
     
     setIsLoading(true);
     
-    // Simulate signup process
-    setTimeout(() => {
-      console.log("Signup attempted with:", formData);
-      alert("Signup functionality will be connected to Supabase backend");
-      setIsLoading(false);
-    }, 1000);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: `${formData.firstName} ${formData.lastName}`,
+          }
+        }
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Account created successfully!");
+        navigate('/');
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+    }
+    
+    setIsLoading(false);
   };
 
   return (

@@ -1,4 +1,3 @@
-
 import { ShoppingCart, User, Search, Heart, LogIn, LogOut } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
+import { useWishlist } from "@/hooks/useWishlist";
 
 interface Product {
   id: string;
@@ -22,17 +22,18 @@ interface Product {
 const Index = () => {
   const { user, signOut } = useAuth();
   const { addToCart, totalItems } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   const categories = [
-    { id: 1, name: "Electronics", image: "/placeholder.svg", count: 0 },
-    { id: 2, name: "Clothing", image: "/placeholder.svg", count: 0 },
-    { id: 3, name: "Home & Garden", image: "/placeholder.svg", count: 0 },
-    { id: 4, name: "Sports", image: "/placeholder.svg", count: 0 },
-    { id: 5, name: "Books", image: "/placeholder.svg", count: 0 },
-    { id: 6, name: "Beauty", image: "/placeholder.svg", count: 0 }
+    { id: 1, name: "Electronics", image: "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400&h=300&fit=crop", count: 0 },
+    { id: 2, name: "Clothing", image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop", count: 0 },
+    { id: 3, name: "Home & Garden", image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop", count: 0 },
+    { id: 4, name: "Sports", image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop", count: 0 },
+    { id: 5, name: "Books", image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop", count: 0 },
+    { id: 6, name: "Beauty", image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=300&fit=crop", count: 0 }
   ];
 
   useEffect(() => {
@@ -55,7 +56,8 @@ const Index = () => {
   };
 
   const handleCategoryClick = (categoryName: string) => {
-    alert(`Browsing ${categoryName} category - this will be connected to a products page`);
+    // Navigate to category page instead of alert
+    window.location.href = `/category/${encodeURIComponent(categoryName)}`;
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -65,8 +67,17 @@ const Index = () => {
     }
   };
 
-  const toggleWishlist = (productName: string) => {
-    alert(`${productName} added to wishlist!`);
+  const toggleWishlist = (product: Product) => {
+    if (!user) {
+      alert('Please log in to add items to wishlist');
+      return;
+    }
+    
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product);
+    }
   };
 
   return (
@@ -106,9 +117,11 @@ const Index = () => {
                   </Button>
                 </Link>
               )}
-              <Button variant="ghost" size="icon" onClick={() => alert("Wishlist functionality - coming soon!")}>
-                <Heart className="h-5 w-5" />
-              </Button>
+              <Link to="/wishlist">
+                <Button variant="ghost" size="icon">
+                  <Heart className="h-5 w-5" />
+                </Button>
+              </Link>
               <Link to="/cart">
                 <Button variant="ghost" size="icon" className="relative">
                   <ShoppingCart className="h-5 w-5" />
@@ -160,7 +173,7 @@ const Index = () => {
                     <img 
                       src={category.image} 
                       alt={category.name}
-                      className="w-20 h-20 object-cover rounded"
+                      className="w-full h-full object-cover rounded-lg"
                     />
                   </div>
                   <CardTitle className="text-xl">{category.name}</CardTitle>
@@ -197,9 +210,9 @@ const Index = () => {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        onClick={() => toggleWishlist(product.name)}
+                        onClick={() => toggleWishlist(product)}
                       >
-                        <Heart className="h-4 w-4" />
+                        <Heart className={`h-4 w-4 ${isInWishlist(product.id) ? 'fill-red-500 text-red-500' : ''}`} />
                       </Button>
                     </div>
                     <CardDescription className="text-sm text-gray-500 mb-2">

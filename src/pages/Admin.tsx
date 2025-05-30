@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Plus, Edit, Trash2, Package, Users, BarChart3, Upload } from "lucide-re
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import AdminAuth from "@/components/AdminAuth";
 
 interface Product {
   id: string;
@@ -20,8 +20,10 @@ interface Product {
 }
 
 const Admin = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [newProduct, setNewProduct] = useState({
     name: "",
     description: "",
@@ -35,6 +37,11 @@ const Admin = () => {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
+    // Check if admin is already authenticated
+    const adminAuth = localStorage.getItem('adminAuthenticated');
+    if (adminAuth === 'true') {
+      setIsAuthenticated(true);
+    }
     fetchProducts();
   }, []);
 
@@ -74,6 +81,19 @@ const Admin = () => {
     return data.publicUrl;
   };
 
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+    setNewProduct({
+      name: product.name,
+      description: product.description,
+      price: product.price.toString(),
+      category: product.category,
+      stock: product.stock.toString(),
+      image_url: product.image_url
+    });
+    setShowAddForm(true);
+  };
+
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploading(true);
@@ -85,29 +105,47 @@ const Admin = () => {
         imageUrl = await uploadImage(imageFile);
       }
 
-      const { data, error } = await supabase
-        .from('products')
-        .insert([{
-          name: newProduct.name,
-          description: newProduct.description,
-          price: parseFloat(newProduct.price),
-          category: newProduct.category,
-          stock: parseInt(newProduct.stock),
-          image_url: imageUrl
-        }]);
+      if (editingProduct) {
+        // Update existing product
+        const { error } = await supabase
+          .from('products')
+          .update({
+            name: newProduct.name,
+            description: newProduct.description,
+            price: parseFloat(newProduct.price),
+            category: newProduct.category,
+            stock: parseInt(newProduct.stock),
+            image_url: imageUrl
+          })
+          .eq('id', editingProduct.id);
 
-      if (error) {
-        throw error;
+        if (error) throw error;
+        toast.success("Product updated successfully!");
+      } else {
+        // Add new product
+        const { error } = await supabase
+          .from('products')
+          .insert([{
+            name: newProduct.name,
+            description: newProduct.description,
+            price: parseFloat(newProduct.price),
+            category: newProduct.category,
+            stock: parseInt(newProduct.stock),
+            image_url: imageUrl
+          }]);
+
+        if (error) throw error;
+        toast.success("Product added successfully!");
       }
 
-      toast.success("Product added successfully!");
       setNewProduct({ name: "", description: "", price: "", category: "", stock: "", image_url: "" });
       setImageFile(null);
       setShowAddForm(false);
+      setEditingProduct(null);
       fetchProducts();
     } catch (error) {
-      console.error('Error adding product:', error);
-      toast.error('Failed to add product');
+      console.error('Error saving product:', error);
+      toast.error('Failed to save product');
     }
     setUploading(false);
   };
@@ -136,6 +174,15 @@ const Admin = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('adminAuthenticated');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <AdminAuth onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -147,15 +194,20 @@ const Admin = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-            <Link to="/">
-              <Button variant="outline">Back to Store</Button>
-            </Link>
+            <div className="flex gap-2">
+              <Link to="/">
+                <Button variant="outline">Back to Store</Button>
+              </Link>
+              <Button variant="outline" onClick={handleLogout}>
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
+      {/* Stats Cards */}
       <div className="container mx-auto px-4 py-8">
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -194,7 +246,11 @@ const Admin = () => {
                 <CardTitle>Products Management</CardTitle>
                 <CardDescription>Manage your store products</CardDescription>
               </div>
-              <Button onClick={() => setShowAddForm(!showAddForm)}>
+              <Button onClick={() => {
+                setEditingProduct(null);
+                setNewProduct({ name: "", description: "", price: "", category: "", stock: "", image_url: "" });
+                setShowAddForm(!showAddForm);
+              }}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Product
               </Button>
@@ -204,7 +260,9 @@ const Admin = () => {
             {/* Add Product Form */}
             {showAddForm && (
               <form onSubmit={handleAddProduct} className="mb-6 p-4 border rounded-lg bg-gray-50">
-                <h3 className="text-lg font-medium mb-4">Add New Product</h3>
+                <h3 className="text-lg font-medium mb-4">
+                  {editingProduct ? 'Edit Product' : 'Add New Product'}
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="productName">Product Name</Label>
@@ -287,9 +345,12 @@ const Admin = () => {
                 </div>
                 <div className="flex gap-2 mt-4">
                   <Button type="submit" disabled={uploading}>
-                    {uploading ? "Adding..." : "Add Product"}
+                    {uploading ? "Saving..." : editingProduct ? "Update Product" : "Add Product"}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
+                  <Button type="button" variant="outline" onClick={() => {
+                    setShowAddForm(false);
+                    setEditingProduct(null);
+                  }}>
                     Cancel
                   </Button>
                 </div>
@@ -325,7 +386,11 @@ const Admin = () => {
                       <td className="py-3 px-4">{product.stock}</td>
                       <td className="py-3 px-4">
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleEditProduct(product)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button 

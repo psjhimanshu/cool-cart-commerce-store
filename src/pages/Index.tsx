@@ -1,3 +1,4 @@
+
 import { ShoppingCart, User, Search, Heart, LogIn, LogOut } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
 import { useWishlist } from "@/hooks/useWishlist";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
@@ -67,17 +69,29 @@ const Index = () => {
     }
   };
 
-  const toggleWishlist = (product: Product) => {
+  const toggleWishlist = (product: Product, e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation to product detail
+    e.stopPropagation();
+    
     if (!user) {
-      alert('Please log in to add items to wishlist');
+      toast.error('Please log in to add items to wishlist');
       return;
     }
     
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
+      toast.success('Removed from wishlist');
     } else {
       addToWishlist(product);
+      toast.success('Added to wishlist');
     }
+  };
+
+  const handleAddToCart = (productId: string, e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation to product detail
+    e.stopPropagation();
+    addToCart(productId);
+    toast.success('Added to cart');
   };
 
   return (
@@ -142,6 +156,22 @@ const Index = () => {
         </div>
       </header>
 
+      {/* Email Verification Notice */}
+      {user && !user.email_confirmed_at && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+          <div className="container mx-auto">
+            <div className="flex">
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  Please check your email and click the verification link to complete your account setup. 
+                  <span className="font-medium"> Note: For development, email verification can be disabled in Supabase settings.</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
         <div className="container mx-auto px-4 text-center">
@@ -194,48 +224,50 @@ const Index = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {products.slice(0, 6).map((product) => (
-                <Card key={product.id} className="group hover:shadow-lg transition-shadow">
-                  <CardHeader className="p-0">
-                    <div className="w-full h-64 bg-gray-200 rounded-t-lg flex items-center justify-center">
-                      <img 
-                        src={product.image_url} 
-                        alt={product.name}
-                        className="w-full h-full object-cover rounded-t-lg"
-                      />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-2">
-                      <CardTitle className="text-lg">{product.name}</CardTitle>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => toggleWishlist(product)}
-                      >
-                        <Heart className={`h-4 w-4 ${isInWishlist(product.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                      </Button>
-                    </div>
-                    <CardDescription className="text-sm text-gray-500 mb-2">
-                      {product.category}
-                    </CardDescription>
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                      {product.description}
-                    </p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-2xl font-bold text-primary">${product.price}</span>
-                      <Button 
-                        onClick={() => addToCart(product.id)} 
-                        className="bg-blue-600 hover:bg-blue-700"
-                        disabled={product.stock === 0}
-                      >
-                        {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      {product.stock} in stock
-                    </p>
-                  </CardContent>
-                </Card>
+                <Link key={product.id} to={`/product/${product.id}`}>
+                  <Card className="group hover:shadow-lg transition-shadow cursor-pointer">
+                    <CardHeader className="p-0">
+                      <div className="w-full h-64 bg-gray-200 rounded-t-lg flex items-center justify-center">
+                        <img 
+                          src={product.image_url} 
+                          alt={product.name}
+                          className="w-full h-full object-cover rounded-t-lg"
+                        />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start mb-2">
+                        <CardTitle className="text-lg">{product.name}</CardTitle>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={(e) => toggleWishlist(product, e)}
+                        >
+                          <Heart className={`h-4 w-4 ${isInWishlist(product.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                        </Button>
+                      </div>
+                      <CardDescription className="text-sm text-gray-500 mb-2">
+                        {product.category}
+                      </CardDescription>
+                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                        {product.description}
+                      </p>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl font-bold text-primary">${product.price}</span>
+                        <Button 
+                          onClick={(e) => handleAddToCart(product.id, e)}
+                          className="bg-blue-600 hover:bg-blue-700"
+                          disabled={product.stock === 0}
+                        >
+                          {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {product.stock} in stock
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}

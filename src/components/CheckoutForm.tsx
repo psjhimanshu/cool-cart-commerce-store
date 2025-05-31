@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface CheckoutFormProps {
   onSuccess: () => void;
@@ -28,6 +28,7 @@ interface ShippingAddress {
 }
 
 const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { cartItems, totalPrice, clearCart } = useCart();
   const [paymentMethod, setPaymentMethod] = useState('cod');
@@ -82,6 +83,14 @@ const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
     
     setIsProcessing(true);
     try {
+      console.log('Creating order with data:', {
+        user_id: user!.id,
+        total_amount: totalPrice,
+        status: 'pending',
+        payment_method: paymentMethod,
+        shipping_address: shippingAddress
+      });
+
       // Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -95,7 +104,12 @@ const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('Order creation error:', orderError);
+        throw orderError;
+      }
+
+      console.log('Order created successfully:', order);
 
       // Create order items
       const orderItems = cartItems.map(item => ({
@@ -105,16 +119,29 @@ const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
         price: item.products.price
       }));
 
+      console.log('Creating order items:', orderItems);
+
       const { error: itemsError } = await supabase
         .from('order_items')
         .insert(orderItems);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('Order items creation error:', itemsError);
+        throw itemsError;
+      }
+
+      console.log('Order items created successfully');
 
       // Clear cart
       await clearCart();
       
-      toast.success(`Order placed successfully! ${paymentMethod === 'cod' ? 'Pay on delivery.' : ''}`);
+      toast.success(`Order placed successfully! Order ID: ${order.id.slice(0, 8)}... ${paymentMethod === 'cod' ? 'Pay on delivery.' : ''}`);
+      
+      // Redirect to home page after 2 seconds
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+      
       onSuccess();
     } catch (error) {
       console.error('Checkout error:', error);

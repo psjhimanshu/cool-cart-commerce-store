@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,6 @@ import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 
 interface CheckoutFormProps {
   onSuccess: () => void;
@@ -28,7 +28,6 @@ interface ShippingAddress {
 }
 
 const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { cartItems, totalPrice, clearCart } = useCart();
   const [paymentMethod, setPaymentMethod] = useState('cod');
@@ -83,17 +82,6 @@ const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
     
     setIsProcessing(true);
     try {
-      console.log('Creating order with data:', {
-        user_id: user!.id,
-        total_amount: totalPrice,
-        status: 'pending',
-        payment_method: paymentMethod,
-        shipping_address: shippingAddress
-      });
-
-      // Convert ShippingAddress to Json format
-      const shippingAddressJson = JSON.parse(JSON.stringify(shippingAddress));
-
       // Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -102,17 +90,12 @@ const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
           total_amount: totalPrice,
           status: 'pending',
           payment_method: paymentMethod,
-          shipping_address: shippingAddressJson
+          shipping_address: shippingAddress
         })
         .select()
         .single();
 
-      if (orderError) {
-        console.error('Order creation error:', orderError);
-        throw orderError;
-      }
-
-      console.log('Order created successfully:', order);
+      if (orderError) throw orderError;
 
       // Create order items
       const orderItems = cartItems.map(item => ({
@@ -122,29 +105,16 @@ const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
         price: item.products.price
       }));
 
-      console.log('Creating order items:', orderItems);
-
       const { error: itemsError } = await supabase
         .from('order_items')
         .insert(orderItems);
 
-      if (itemsError) {
-        console.error('Order items creation error:', itemsError);
-        throw itemsError;
-      }
-
-      console.log('Order items created successfully');
+      if (itemsError) throw itemsError;
 
       // Clear cart
       await clearCart();
       
-      toast.success(`Order placed successfully! Order ID: ${order.id.slice(0, 8)}... ${paymentMethod === 'cod' ? 'Pay on delivery.' : ''}`);
-      
-      // Redirect to home page after 2 seconds
-      setTimeout(() => {
-        navigate('/');
-      }, 2000);
-      
+      toast.success(`Order placed successfully! ${paymentMethod === 'cod' ? 'Pay on delivery.' : ''}`);
       onSuccess();
     } catch (error) {
       console.error('Checkout error:', error);
@@ -301,7 +271,7 @@ const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
               <RadioGroupItem value="cod" id="cod" />
               <Label htmlFor="cod">Cash on Delivery (COD)</Label>
             </div>
-             <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
               <RadioGroupItem value="online" id="online" />
               <Label htmlFor="online">Online Payment (Coming Soon)</Label>
             </div>

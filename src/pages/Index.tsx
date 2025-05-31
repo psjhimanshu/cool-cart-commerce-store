@@ -1,15 +1,15 @@
 
-import { ShoppingCart, User, Search, Heart, LogIn, LogOut } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Heart } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
 import { useWishlist } from "@/hooks/useWishlist";
 import { toast } from "sonner";
+import Header from "@/components/Header";
 
 interface Product {
   id: string;
@@ -22,12 +22,13 @@ interface Product {
 }
 
 const Index = () => {
-  const { user, signOut } = useAuth();
-  const { addToCart, totalItems } = useCart();
+  const { user } = useAuth();
+  const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const categories = [
     { id: 1, name: "Electronics", image: "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400&h=300&fit=crop", count: 0 },
@@ -58,19 +59,18 @@ const Index = () => {
   };
 
   const handleCategoryClick = (categoryName: string) => {
-    // Navigate to category page instead of alert
-    window.location.href = `/category/${encodeURIComponent(categoryName)}`;
+    navigate(`/category/${encodeURIComponent(categoryName)}`);
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      alert(`Searching for: ${searchQuery} - this will be connected to search functionality`);
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
   const toggleWishlist = (product: Product, e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent navigation to product detail
+    e.preventDefault();
     e.stopPropagation();
     
     if (!user) {
@@ -88,7 +88,7 @@ const Index = () => {
   };
 
   const handleAddToCart = (productId: string, e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent navigation to product detail
+    e.preventDefault();
     e.stopPropagation();
     addToCart(productId);
     toast.success('Added to cart');
@@ -96,65 +96,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-primary">ShopEase</h1>
-            </div>
-            
-            <form onSubmit={handleSearch} className="flex-1 max-w-md mx-8">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input 
-                  placeholder="Search products..." 
-                  className="pl-10"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </form>
-
-            <div className="flex items-center space-x-4">
-              {user ? (
-                <>
-                  <span className="text-sm text-gray-600">Hi, {user.email}</span>
-                  <Button variant="ghost" size="icon" onClick={signOut}>
-                    <LogOut className="h-5 w-5" />
-                  </Button>
-                </>
-              ) : (
-                <Link to="/login">
-                  <Button variant="ghost" size="icon">
-                    <LogIn className="h-5 w-5" />
-                  </Button>
-                </Link>
-              )}
-              <Link to="/wishlist">
-                <Button variant="ghost" size="icon">
-                  <Heart className="h-5 w-5" />
-                </Button>
-              </Link>
-              <Link to="/cart">
-                <Button variant="ghost" size="icon" className="relative">
-                  <ShoppingCart className="h-5 w-5" />
-                  {totalItems > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {totalItems}
-                    </span>
-                  )}
-                </Button>
-              </Link>
-              <Link to="/admin">
-                <Button variant="ghost" size="icon">
-                  <User className="h-5 w-5" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header 
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        onSearch={handleSearch}
+      />
 
       {/* Email Verification Notice */}
       {user && !user.email_confirmed_at && (
@@ -173,10 +119,10 @@ const Index = () => {
       )}
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
+      <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12 md:py-20">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-5xl font-bold mb-4">Welcome to ShopEase</h2>
-          <p className="text-xl mb-8">Discover amazing products at unbeatable prices</p>
+          <h2 className="text-3xl md:text-5xl font-bold mb-4">Welcome to ShopEase</h2>
+          <p className="text-lg md:text-xl mb-8">Discover amazing products at unbeatable prices</p>
           <Button 
             size="lg" 
             className="bg-white text-blue-600 hover:bg-gray-100"
@@ -188,10 +134,10 @@ const Index = () => {
       </section>
 
       {/* Categories Section */}
-      <section id="categories" className="py-16">
+      <section id="categories" className="py-8 md:py-16">
         <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-bold text-center mb-12">Shop by Category</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <h3 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12">Shop by Category</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {categories.map((category) => (
               <Card 
                 key={category.id} 
@@ -199,14 +145,14 @@ const Index = () => {
                 onClick={() => handleCategoryClick(category.name)}
               >
                 <CardHeader className="text-center">
-                  <div className="w-full h-48 bg-gray-200 rounded-lg mb-4 flex items-center justify-center group-hover:bg-gray-300 transition-colors">
+                  <div className="w-full h-40 md:h-48 bg-gray-200 rounded-lg mb-4 flex items-center justify-center group-hover:bg-gray-300 transition-colors">
                     <img 
                       src={category.image} 
                       alt={category.name}
                       className="w-full h-full object-cover rounded-lg"
                     />
                   </div>
-                  <CardTitle className="text-xl">{category.name}</CardTitle>
+                  <CardTitle className="text-lg md:text-xl">{category.name}</CardTitle>
                   <CardDescription>{products.filter(p => p.category === category.name).length} products</CardDescription>
                 </CardHeader>
               </Card>
@@ -216,18 +162,18 @@ const Index = () => {
       </section>
 
       {/* Featured Products */}
-      <section className="py-16 bg-white">
+      <section className="py-8 md:py-16 bg-white">
         <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-bold text-center mb-12">Featured Products</h3>
+          <h3 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12">Featured Products</h3>
           {loading ? (
             <div className="text-center">Loading products...</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {products.slice(0, 6).map((product) => (
                 <Link key={product.id} to={`/product/${product.id}`}>
                   <Card className="group hover:shadow-lg transition-shadow cursor-pointer">
                     <CardHeader className="p-0">
-                      <div className="w-full h-64 bg-gray-200 rounded-t-lg flex items-center justify-center">
+                      <div className="w-full h-48 md:h-64 bg-gray-200 rounded-t-lg flex items-center justify-center">
                         <img 
                           src={product.image_url} 
                           alt={product.name}
@@ -235,9 +181,9 @@ const Index = () => {
                         />
                       </div>
                     </CardHeader>
-                    <CardContent className="p-6">
+                    <CardContent className="p-4 md:p-6">
                       <div className="flex justify-between items-start mb-2">
-                        <CardTitle className="text-lg">{product.name}</CardTitle>
+                        <CardTitle className="text-base md:text-lg">{product.name}</CardTitle>
                         <Button 
                           variant="ghost" 
                           size="icon"
@@ -253,11 +199,12 @@ const Index = () => {
                         {product.description}
                       </p>
                       <div className="flex justify-between items-center">
-                        <span className="text-2xl font-bold text-primary">${product.price}</span>
+                        <span className="text-xl md:text-2xl font-bold text-primary">${product.price}</span>
                         <Button 
                           onClick={(e) => handleAddToCart(product.id, e)}
-                          className="bg-blue-600 hover:bg-blue-700"
+                          className="bg-blue-600 hover:bg-blue-700 text-xs md:text-sm"
                           disabled={product.stock === 0}
+                          size="sm"
                         >
                           {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
                         </Button>
@@ -275,27 +222,34 @@ const Index = () => {
       </section>
 
       {/* Newsletter */}
-      <section className="py-16 bg-gray-900 text-white">
+      <section className="py-8 md:py-16 bg-gray-900 text-white">
         <div className="container mx-auto px-4 text-center">
-          <h3 className="text-3xl font-bold mb-4">Stay Updated</h3>
+          <h3 className="text-2xl md:text-3xl font-bold mb-4">Stay Updated</h3>
           <p className="text-gray-300 mb-8">Subscribe to our newsletter for the latest deals and products</p>
           <form 
-            className="flex max-w-md mx-auto"
+            className="flex flex-col sm:flex-row max-w-md mx-auto gap-2"
             onSubmit={(e) => {
               e.preventDefault();
-              alert("Newsletter subscription - this will be connected to backend!");
+              toast.success("Thank you for subscribing! (Feature coming soon)");
             }}
           >
-            <Input placeholder="Enter your email" className="bg-white text-black" />
-            <Button type="submit" className="ml-2 bg-blue-600 hover:bg-blue-700">Subscribe</Button>
+            <input 
+              type="email" 
+              placeholder="Enter your email" 
+              className="flex-1 px-4 py-2 rounded text-black"
+              required
+            />
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
+              Subscribe
+            </Button>
           </form>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-12">
+      <footer className="bg-gray-800 text-white py-8 md:py-12">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8">
             <div>
               <h4 className="text-lg font-bold mb-4">ShopEase</h4>
               <p className="text-gray-300">Your one-stop shop for amazing products at great prices.</p>
@@ -312,21 +266,21 @@ const Index = () => {
             <div>
               <h4 className="text-lg font-bold mb-4">Categories</h4>
               <ul className="space-y-2 text-gray-300">
-                <li><a href="#" className="hover:text-white" onClick={() => handleCategoryClick("Electronics")}>Electronics</a></li>
-                <li><a href="#" className="hover:text-white" onClick={() => handleCategoryClick("Clothing")}>Clothing</a></li>
-                <li><a href="#" className="hover:text-white" onClick={() => handleCategoryClick("Home & Garden")}>Home & Garden</a></li>
+                <li><button className="hover:text-white text-left" onClick={() => handleCategoryClick("Electronics")}>Electronics</button></li>
+                <li><button className="hover:text-white text-left" onClick={() => handleCategoryClick("Clothing")}>Clothing</button></li>
+                <li><button className="hover:text-white text-left" onClick={() => handleCategoryClick("Home & Garden")}>Home & Garden</button></li>
               </ul>
             </div>
             <div>
               <h4 className="text-lg font-bold mb-4">Customer Service</h4>
               <ul className="space-y-2 text-gray-300">
-                <li><a href="#" className="hover:text-white">Shipping Info</a></li>
-                <li><a href="#" className="hover:text-white">Returns</a></li>
-                <li><a href="#" className="hover:text-white">Support</a></li>
+                <li><button className="hover:text-white text-left">Shipping Info</button></li>
+                <li><button className="hover:text-white text-left">Returns</button></li>
+                <li><button className="hover:text-white text-left">Support</button></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-300">
+          <div className="border-t border-gray-700 mt-6 md:mt-8 pt-6 md:pt-8 text-center text-gray-300">
             <p>&copy; 2024 ShopEase. All rights reserved.</p>
           </div>
         </div>

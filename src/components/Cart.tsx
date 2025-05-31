@@ -5,55 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Minus, Plus, Trash2, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import CheckoutForm from '@/components/CheckoutForm';
 
 export const Cart = () => {
   const { user } = useAuth();
-  const { cartItems, updateQuantity, removeFromCart, clearCart, totalPrice } = useCart();
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const { cartItems, updateQuantity, removeFromCart, totalPrice } = useCart();
+  const [showCheckout, setShowCheckout] = useState(false);
 
-  const handleCheckout = async () => {
-    if (!user || cartItems.length === 0) return;
-
-    setIsCheckingOut(true);
-    try {
-      // Create order
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
-          total_amount: totalPrice,
-          status: 'completed'
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      // Create order items
-      const orderItems = cartItems.map(item => ({
-        order_id: order.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price: item.products.price
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
-
-      // Clear cart
-      await clearCart();
-      
-      toast.success('Order placed successfully!');
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast.error('Failed to place order');
-    }
-    setIsCheckingOut(false);
+  const handleCheckoutSuccess = () => {
+    setShowCheckout(false);
   };
 
   if (!user) {
@@ -64,6 +24,15 @@ export const Cart = () => {
           <p className="text-gray-500">Please log in to view your cart</p>
         </CardContent>
       </Card>
+    );
+  }
+
+  if (showCheckout) {
+    return (
+      <CheckoutForm 
+        onSuccess={handleCheckoutSuccess}
+        onCancel={() => setShowCheckout(false)}
+      />
     );
   }
 
@@ -86,7 +55,7 @@ export const Cart = () => {
       <CardContent>
         <div className="space-y-4">
           {cartItems.map((item) => (
-            <div key={item.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+            <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 p-4 border rounded-lg">
               <img 
                 src={item.products.image_url} 
                 alt={item.products.name}
@@ -127,22 +96,12 @@ export const Cart = () => {
             <div className="flex justify-between items-center mb-4">
               <span className="text-xl font-bold">Total: ${totalPrice.toFixed(2)}</span>
             </div>
-            <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={clearCart}
-                className="flex-1"
-              >
-                Clear Cart
-              </Button>
-              <Button 
-                onClick={handleCheckout}
-                disabled={isCheckingOut}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                {isCheckingOut ? 'Processing...' : 'Checkout'}
-              </Button>
-            </div>
+            <Button 
+              onClick={() => setShowCheckout(true)}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              Proceed to Checkout
+            </Button>
           </div>
         </div>
       </CardContent>

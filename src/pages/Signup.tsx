@@ -4,12 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
+import { validatePassword, getStrengthColor, getStrengthText } from "@/utils/passwordValidation";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -20,6 +21,7 @@ const Signup = () => {
     confirmPassword: ""
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -37,10 +39,18 @@ const Signup = () => {
     });
   };
 
+  const passwordValidation = validatePassword(formData.password);
+  const passwordsMatch = formData.password === formData.confirmPassword;
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (formData.password !== formData.confirmPassword) {
+    if (!passwordValidation.isValid) {
+      toast.error("Please fix password requirements");
+      return;
+    }
+    
+    if (!passwordsMatch) {
       toast.error("Passwords don't match!");
       return;
     }
@@ -54,14 +64,15 @@ const Signup = () => {
         options: {
           data: {
             full_name: `${formData.firstName} ${formData.lastName}`,
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/`
         }
       });
 
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success("Account created successfully!");
+        toast.success("Account created successfully! Please check your email for verification.");
         navigate('/');
       }
     } catch (error) {
@@ -140,20 +151,76 @@ const Signup = () => {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
+              
+              {/* Password Strength Indicator */}
+              {formData.password && (
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">Strength:</span>
+                    <span className={`text-sm font-medium ${getStrengthColor(passwordValidation.strength)}`}>
+                      {getStrengthText(passwordValidation.strength)}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {passwordValidation.errors.map((error, index) => (
+                      <div key={index} className="flex items-center space-x-2 text-sm text-red-600">
+                        <XCircle className="h-3 w-3" />
+                        <span>{error}</span>
+                      </div>
+                    ))}
+                    {passwordValidation.isValid && (
+                      <div className="flex items-center space-x-2 text-sm text-green-600">
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Password meets all requirements</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm your password"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              {formData.confirmPassword && (
+                <div className="flex items-center space-x-2 text-sm">
+                  {passwordsMatch ? (
+                    <>
+                      <CheckCircle className="h-3 w-3 text-green-600" />
+                      <span className="text-green-600">Passwords match</span>
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="h-3 w-3 text-red-600" />
+                      <span className="text-red-600">Passwords don't match</span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading || !passwordValidation.isValid || !passwordsMatch}
+            >
               {isLoading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>

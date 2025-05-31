@@ -91,6 +91,9 @@ const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
         shipping_address: shippingAddress
       });
 
+      // Convert ShippingAddress to Json format
+      const shippingAddressJson = JSON.parse(JSON.stringify(shippingAddress));
+
       // Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -99,7 +102,7 @@ const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
           total_amount: totalPrice,
           status: 'pending',
           payment_method: paymentMethod,
-          shipping_address: shippingAddress
+          shipping_address: shippingAddressJson
         })
         .select()
         .single();
@@ -298,7 +301,7 @@ const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
               <RadioGroupItem value="cod" id="cod" />
               <Label htmlFor="cod">Cash on Delivery (COD)</Label>
             </div>
-            <div className="flex items-center space-x-2">
+             <div className="flex items-center space-x-2">
               <RadioGroupItem value="online" id="online" />
               <Label htmlFor="online">Online Payment (Coming Soon)</Label>
             </div>

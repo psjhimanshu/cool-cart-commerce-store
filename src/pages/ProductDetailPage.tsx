@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -178,9 +177,19 @@ const ProductDetailPage = () => {
             )}
           </div>
         </div>
+        {/* Product Reviews Section */}
+        {product && (
+          <div>
+            <div className="max-w-2xl mx-auto">
+              {/* ProductReviews component */}
+              <ProductReviews productId={product.id} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
+import ProductReviews from "@/components/ProductReviews";
 export default ProductDetailPage;

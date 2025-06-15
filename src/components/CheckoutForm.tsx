@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -77,9 +76,15 @@ const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
     return true;
   };
 
+  // For redirect after placement
+  import { useNavigate } from "react-router-dom";
+  // ... (above, just make sure useNavigate is present) ...
+  const navigate = useNavigate();
+  // ... main component function continued ...
+
   const handlePlaceOrder = async () => {
     if (!validateForm()) return;
-    
+
     setIsProcessing(true);
     try {
       // Create order
@@ -90,7 +95,7 @@ const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
           total_amount: totalPrice,
           status: 'pending',
           payment_method: paymentMethod,
-          shipping_address: shippingAddress
+          shipping_address: { ...shippingAddress }, // fix: wrap as JSON
         })
         .select()
         .single();
@@ -113,9 +118,16 @@ const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
 
       // Clear cart
       await clearCart();
-      
-      toast.success(`Order placed successfully! ${paymentMethod === 'cod' ? 'Pay on delivery.' : ''}`);
-      onSuccess();
+
+      // Popup and redirect
+      toast.success("Order placed successfully! You will be redirected to Home.", {
+        duration: 2000,
+      });
+      setTimeout(() => {
+        navigate("/");
+      }, 2000);
+
+      onSuccess && typeof onSuccess === "function" && onSuccess();
     } catch (error) {
       console.error('Checkout error:', error);
       toast.error('Failed to place order. Please try again.');

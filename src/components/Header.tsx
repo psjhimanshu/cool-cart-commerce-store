@@ -88,7 +88,6 @@ const Header = ({ searchQuery, setSearchQuery, onSearch }: HeaderProps) => {
               <MenubarMenu>
                 <MenubarTrigger asChild>
                   <div className="flex flex-col items-center cursor-pointer group select-none">
-                    <Heart className="h-5 w-5 group-hover:text-primary" />
                     <span className="text-xs mt-1 text-gray-600 group-hover:text-primary">
                       Customer Service
                     </span>

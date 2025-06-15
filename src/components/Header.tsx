@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { ShoppingCart, User, Search, Heart, LogIn, LogOut, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,7 +44,7 @@ const Header = ({ searchQuery, setSearchQuery, onSearch }: HeaderProps) => {
               <h1 className="text-xl md:text-2xl font-bold text-primary">ShopEase</h1>
             </Link>
           </div>
-          
+
           {/* Search Bar - Hidden on small screens */}
           <form onSubmit={onSearch} className="hidden md:flex flex-1 max-w-md mx-8">
             <div className="relative w-full">
@@ -59,74 +58,67 @@ const Header = ({ searchQuery, setSearchQuery, onSearch }: HeaderProps) => {
             </div>
           </form>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-2">
-            <Menubar>
-              <MenubarMenu>
-                <MenubarTrigger>Categories</MenubarTrigger>
-                <MenubarContent>
-                  {categories.map((category) => (
-                    <MenubarItem key={category} asChild>
-                      <Link to={`/category/${encodeURIComponent(category)}`}>
-                        {category}
-                      </Link>
-                    </MenubarItem>
-                  ))}
-                </MenubarContent>
-              </MenubarMenu>
-              
-              {user ? (
+          {/* Desktop Navigation - New style */}
+          <div className="hidden md:flex items-center space-x-6">
+            {/* Categories */}
+            <div className="flex flex-col items-center cursor-pointer group select-none" onClick={() => navigate("/category/Electronics")}>
+              <Menu className="h-5 w-5 group-hover:text-primary" />
+              <span className="text-xs mt-1 text-gray-600 group-hover:text-primary">Categories</span>
+            </div>
+            {/* Account */}
+            <div className="relative">
+              <Menubar>
                 <MenubarMenu>
-                  <MenubarTrigger>
-                    <User className="h-4 w-4 mr-1" />
-                    Account
+                  <MenubarTrigger asChild>
+                    <div className="flex flex-col items-center cursor-pointer group select-none">
+                      <User className="h-5 w-5 group-hover:text-primary" />
+                      <span className="text-xs mt-1 text-gray-600 group-hover:text-primary">Account</span>
+                    </div>
                   </MenubarTrigger>
                   <MenubarContent>
-                    <MenubarItem disabled>
-                      {user.email}
-                    </MenubarItem>
-                    <MenubarItem asChild>
-                      <Link to="/admin">Admin Panel</Link>
-                    </MenubarItem>
-                    <MenubarItem onClick={handleSignOut}>
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Logout
-                    </MenubarItem>
+                    {user ? (
+                      <>
+                        <MenubarItem disabled>{user.email}</MenubarItem>
+                        <MenubarItem asChild>
+                          <Link to="/admin">Admin Panel</Link>
+                        </MenubarItem>
+                        <MenubarItem onClick={handleSignOut}>
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Logout
+                        </MenubarItem>
+                      </>
+                    ) : (
+                      <>
+                        <MenubarItem asChild>
+                          <Link to="/login">Login</Link>
+                        </MenubarItem>
+                        <MenubarItem asChild>
+                          <Link to="/signup">Sign Up</Link>
+                        </MenubarItem>
+                      </>
+                    )}
                   </MenubarContent>
                 </MenubarMenu>
-              ) : (
-                <MenubarMenu>
-                  <MenubarTrigger>
-                    <LogIn className="h-4 w-4 mr-1" />
-                    Account
-                  </MenubarTrigger>
-                  <MenubarContent>
-                    <MenubarItem asChild>
-                      <Link to="/login">Login</Link>
-                    </MenubarItem>
-                    <MenubarItem asChild>
-                      <Link to="/signup">Sign Up</Link>
-                    </MenubarItem>
-                  </MenubarContent>
-                </MenubarMenu>
-              )}
-            </Menubar>
-
+              </Menubar>
+            </div>
+            {/* Wishlist */}
             <Link to="/wishlist">
-              <Button variant="ghost" size="icon">
-                <Heart className="h-5 w-5" />
-              </Button>
+              <div className="flex flex-col items-center cursor-pointer group select-none">
+                <Heart className="h-5 w-5 group-hover:text-primary" />
+                <span className="text-xs mt-1 text-gray-600 group-hover:text-primary">Wishlist</span>
+              </div>
             </Link>
-            
-            <Link to="/cart">
-              <Button variant="ghost" size="icon" className="relative">
-                <ShoppingCart className="h-5 w-5" />
+            {/* Cart */}
+            <Link to="/cart" className="relative">
+              <div className="flex flex-col items-center cursor-pointer group select-none">
+                <ShoppingCart className="h-5 w-5 group-hover:text-primary" />
+                <span className="text-xs mt-1 text-gray-600 group-hover:text-primary">Cart</span>
                 {totalItems > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                     {totalItems}
                   </span>
                 )}
-              </Button>
+              </div>
             </Link>
           </div>
 
@@ -141,7 +133,7 @@ const Header = ({ searchQuery, setSearchQuery, onSearch }: HeaderProps) => {
             </Button>
           </div>
         </div>
-
+        
         {/* Mobile Search Bar */}
         <form onSubmit={onSearch} className="md:hidden mt-4">
           <div className="relative">

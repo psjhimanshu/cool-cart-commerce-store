@@ -84,28 +84,6 @@ const Header = ({ searchQuery, setSearchQuery, onSearch }: HeaderProps) => {
             </Menubar>
 
             {/* Customer Service Dropdown */}
-            <Menubar>
-              <MenubarMenu>
-                <MenubarTrigger asChild>
-                  <div className="flex flex-col items-center cursor-pointer group select-none">
-                    <span className="text-xs mt-1 text-gray-600 group-hover:text-primary">
-                      Customer Service
-                    </span>
-                  </div>
-                </MenubarTrigger>
-                <MenubarContent className="z-[100] bg-white border rounded shadow-lg w-56">
-                  <MenubarItem asChild>
-                    <Link to="/support" className="w-full">Contact Us</Link>
-                  </MenubarItem>
-                  <MenubarItem asChild>
-                    <Link to="/returns" className="w-full">Returns Policy</Link>
-                  </MenubarItem>
-                  <MenubarItem asChild>
-                    <Link to="/shipping-info" className="w-full">Shipping Information</Link>
-                  </MenubarItem>
-                </MenubarContent>
-              </MenubarMenu>
-            </Menubar>
 
             {/* Account */}
             <div className="relative">

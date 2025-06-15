@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { ShoppingCart, User, Search, Heart, LogIn, LogOut, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,10 @@ interface HeaderProps {
   onSearch: (e: React.FormEvent) => void;
 }
 
+const categories = [
+  "Electronics", "Clothing", "Home & Garden", "Sports", "Books", "Beauty"
+];
+
 const Header = ({ searchQuery, setSearchQuery, onSearch }: HeaderProps) => {
   const { user, signOut } = useAuth();
   const { totalItems } = useCart();
@@ -29,10 +34,6 @@ const Header = ({ searchQuery, setSearchQuery, onSearch }: HeaderProps) => {
     await signOut();
     setIsMobileMenuOpen(false);
   };
-
-  const categories = [
-    "Electronics", "Clothing", "Home & Garden", "Sports", "Books", "Beauty"
-  ];
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50 border-b">
@@ -58,13 +59,31 @@ const Header = ({ searchQuery, setSearchQuery, onSearch }: HeaderProps) => {
             </div>
           </form>
 
-          {/* Desktop Navigation - New style */}
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
-            {/* Categories */}
-            <div className="flex flex-col items-center cursor-pointer group select-none" onClick={() => navigate("/category/Electronics")}>
-              <Menu className="h-5 w-5 group-hover:text-primary" />
-              <span className="text-xs mt-1 text-gray-600 group-hover:text-primary">Categories</span>
-            </div>
+            {/* Categories Dropdown */}
+            <Menubar>
+              <MenubarMenu>
+                <MenubarTrigger asChild>
+                  <div className="flex flex-col items-center cursor-pointer group select-none">
+                    <Menu className="h-5 w-5 group-hover:text-primary" />
+                    <span className="text-xs mt-1 text-gray-600 group-hover:text-primary">Categories</span>
+                  </div>
+                </MenubarTrigger>
+                <MenubarContent className="z-[100] bg-white border rounded shadow-lg w-48">
+                  {categories.map((category) => (
+                    <MenubarItem
+                      key={category}
+                      onClick={() => navigate(`/category/${encodeURIComponent(category)}`)}
+                      className="cursor-pointer"
+                    >
+                      {category}
+                    </MenubarItem>
+                  ))}
+                </MenubarContent>
+              </MenubarMenu>
+            </Menubar>
+
             {/* Account */}
             <div className="relative">
               <Menubar>
@@ -236,3 +255,4 @@ const Header = ({ searchQuery, setSearchQuery, onSearch }: HeaderProps) => {
 };
 
 export default Header;
+

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { ShoppingCart, User, Search, Heart, LogIn, LogOut, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -80,6 +79,31 @@ const Header = ({ searchQuery, setSearchQuery, onSearch }: HeaderProps) => {
                       {category}
                     </MenubarItem>
                   ))}
+                </MenubarContent>
+              </MenubarMenu>
+            </Menubar>
+
+            {/* Customer Service Dropdown */}
+            <Menubar>
+              <MenubarMenu>
+                <MenubarTrigger asChild>
+                  <div className="flex flex-col items-center cursor-pointer group select-none">
+                    <Heart className="h-5 w-5 group-hover:text-primary" />
+                    <span className="text-xs mt-1 text-gray-600 group-hover:text-primary">
+                      Customer Service
+                    </span>
+                  </div>
+                </MenubarTrigger>
+                <MenubarContent className="z-[100] bg-white border rounded shadow-lg w-56">
+                  <MenubarItem asChild>
+                    <Link to="/support" className="w-full">Contact Us</Link>
+                  </MenubarItem>
+                  <MenubarItem asChild>
+                    <Link to="/returns" className="w-full">Returns Policy</Link>
+                  </MenubarItem>
+                  <MenubarItem asChild>
+                    <Link to="/shipping-info" className="w-full">Shipping Information</Link>
+                  </MenubarItem>
                 </MenubarContent>
               </MenubarMenu>
             </Menubar>
@@ -185,6 +209,32 @@ const Header = ({ searchQuery, setSearchQuery, onSearch }: HeaderProps) => {
                 ))}
               </div>
 
+              {/* Customer Service Section */}
+              <div className="pb-2 border-b">
+                <h3 className="font-medium text-sm text-gray-500 mb-2">Customer Service</h3>
+                <Link
+                  to="/support"
+                  className="block py-2 text-sm hover:bg-gray-50 rounded px-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Contact Us
+                </Link>
+                <Link
+                  to="/returns"
+                  className="block py-2 text-sm hover:bg-gray-50 rounded px-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Returns Policy
+                </Link>
+                <Link
+                  to="/shipping-info"
+                  className="block py-2 text-sm hover:bg-gray-50 rounded px-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Shipping Information
+                </Link>
+              </div>
+
               {/* Account */}
               <div className="pb-2 border-b">
                 {user ? (
@@ -255,4 +305,3 @@ const Header = ({ searchQuery, setSearchQuery, onSearch }: HeaderProps) => {
 };
 
 export default Header;
-

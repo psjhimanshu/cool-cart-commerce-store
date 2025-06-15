@@ -9,6 +9,7 @@ import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigate } from "react-router-dom";
 
 interface CheckoutFormProps {
   onSuccess: () => void;
@@ -76,11 +77,7 @@ const CheckoutForm = ({ onSuccess, onCancel }: CheckoutFormProps) => {
     return true;
   };
 
-  // For redirect after placement
-  import { useNavigate } from "react-router-dom";
-  // ... (above, just make sure useNavigate is present) ...
   const navigate = useNavigate();
-  // ... main component function continued ...
 
   const handlePlaceOrder = async () => {
     if (!validateForm()) return;

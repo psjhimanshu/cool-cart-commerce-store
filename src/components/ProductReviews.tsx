@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,7 +41,17 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
       toast.error("Failed to fetch reviews");
       setReviews([]);
     } else {
-      setReviews(data as Review[]);
+      // Defensive: filter out rows with missing fields
+      const safeData = Array.isArray(data)
+        ? data.map((d) => ({
+            ...d,
+            profiles:
+              typeof d.profiles === "object" && d.profiles && "email" in d.profiles
+                ? d.profiles
+                : undefined,
+          }))
+        : [];
+      setReviews(safeData as Review[]);
     }
     setLoading(false);
   };
@@ -92,12 +101,18 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
           {reviews.map((r) => (
             <div key={r.id} className="border rounded-lg p-4 bg-gray-50">
               <div className="flex items-center space-x-2 mb-1">
-                <span className="font-semibold">{r.profiles?.full_name ?? r.profiles?.email ?? "User"}</span>
+                <span className="font-semibold">
+                  {(r.profiles?.full_name ||
+                    r.profiles?.email ||
+                    "User")}
+                </span>
                 <span className="text-yellow-500">
                   {"★".repeat(r.rating)}
                   {"☆".repeat(5 - r.rating)}
                 </span>
-                <span className="text-xs text-gray-400 ml-2">{new Date(r.created_at).toLocaleDateString()}</span>
+                <span className="text-xs text-gray-400 ml-2">
+                  {new Date(r.created_at).toLocaleDateString()}
+                </span>
               </div>
               <div className="text-gray-700">{r.comment}</div>
             </div>
@@ -115,7 +130,9 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                 <button
                   key={num}
                   type="button"
-                  className={`text-2xl ${rating >= num ? "text-yellow-500" : "text-gray-300"}`}
+                  className={`text-2xl ${
+                    rating >= num ? "text-yellow-500" : "text-gray-300"
+                  }`}
                   onClick={() => setRating(num)}
                   aria-label={`Rate ${num} star${num > 1 ? "s" : ""}`}
                 >
